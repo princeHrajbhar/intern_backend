@@ -1,41 +1,31 @@
 const mysql = require("mysql2/promise");
 
-// Create the connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+// Create the connection pool using DB_URL
+const pool = mysql.createPool(process.env.DB_URL);
 
 // Function to set up the database
 async function setupDatabase() {
   try {
     // First, create the database if it doesn't exist
     const tempPool = mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
+      uri: process.env.DB_URL,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
     });
 
-    await tempPool.query(
-      `CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`
-    );
+    const dbName = process.env.DB_URL.split('/').pop();
+
+    await tempPool.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     await tempPool.end();
 
     // Now create tables
     await createTables();
 
-    console.log("Database setup completed successfully");
+    console.log("✅ Database setup completed successfully");
     return true;
   } catch (error) {
-    console.error("Database setup failed:", error);
+    console.error("❌ Database setup failed:", error);
     throw error;
   }
 }
@@ -56,9 +46,9 @@ async function createTables() {
 
   try {
     await pool.query(createSchoolsTable);
-    console.log("Schools table created or already exists");
+    console.log("✅ Schools table created or already exists");
   } catch (error) {
-    console.error("Error creating schools table:", error);
+    console.error("❌ Error creating schools table:", error);
     throw error;
   }
 }
